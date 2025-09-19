@@ -5,28 +5,22 @@ const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
 
-// --- CONFIGURATION ---
-// Create an Express application
 const app = express();
-// Define the port the server will run on
-const PORT = process.env.PORT || 3000;
+const port = process.env.PORT || 3000; // Use environment variable for port or default to 3000
+
+app.use(cors());
+app.use(express.json());
 
 // --- DATABASE CONNECTION ---
-// IMPORTANT: Replace the following with your actual database connection details.
-// It's recommended to use environment variables for sensitive data.
+// This configuration is now ready for both local development and deployment on Render.
+// For local development, create an environment variable for DATABASE_URL, e.g.,
+// postgresql://inventory_user:your_secure_password@localhost:5432/inventory_db
 const pool = new Pool({
-  user: 'inventory_user',       // Your PostgreSQL username
-  host: 'localhost',         // Your PostgreSQL server host
-  database: 'inventory_db',  // Your PostgreSQL database name
-  password: 'admin',// Your PostgreSQL password
-  port: 5432,                // Your PostgreSQL port
+  connectionString: process.env.DATABASE_URL,
+  // If deploying to a service that requires SSL, but doesn't provide a CA certificate
+  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
 });
 
-// --- MIDDLEWARE ---
-// Enable Cross-Origin Resource Sharing (CORS) to allow the frontend to connect
-app.use(cors());
-// Enable parsing of JSON request bodies
-app.use(express.json());
 
 // --- API ROUTES ---
 
@@ -45,6 +39,22 @@ app.get('/api/products', async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
+
+// GET /api/products/:id - Fetch a single product by its ID
+app.get('/api/products/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const { rows } = await pool.query('SELECT * FROM products WHERE id = $1', [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(`Error fetching product ${id}:`, err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 
 // POST /api/products - Add a new product to the database
 app.post('/api/products', async (req, res) => {
@@ -102,6 +112,7 @@ app.delete('/api/products/:id', async (req, res) => {
 });
 
 // --- START SERVER ---
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+app.listen(port, () => {
+  console.log(`Server is running on http://localhost:${port}`);
 });
+
