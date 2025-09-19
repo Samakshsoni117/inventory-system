@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Management System</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Feather Icons for UI -->
+    <script src="https://unpkg.com/feather-icons"></script>
+    <!-- jsPDF Libraries for PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        /* Custom styles for the application */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F0F2F5; /* A light, modern gray */
+        }
+        /* Custom focus styles for better accessibility */
+        .form-input:focus, .form-textarea:focus, .btn:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.3); /* Teal focus ring */
+            border-color: #14B8A6;
+        }
+        /* Spinner animation */
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .spinner {
+            border-color: #a7f3d0;
+            border-top-color: #14b8a6;
+            animation: spin 1s linear infinite;
+        }
+        /* Style for decorative background shapes */
+        .decorative-shape {
+            position: fixed;
+            z-index: -1;
+            opacity: 0.5;
+            pointer-events: none; /* Make them non-interactive */
+        }
+    </style>
+</head>
+<body class="text-gray-800 bg-cover bg-center" style="background-image: url('data:image/svg+xml,%3Csvg width=%2760%27 height=%2760%27 viewBox=%270 0 60 60%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cg fill=%27none%27 fill-rule=%27evenodd%27%3E%3Cg fill=%27%23d1fae5%27 fill-opacity=%270.4%27%3E%3Cpath d=%27M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z%27/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');">
+
+    <!-- Decorative SVG Shapes -->
+    <div class="decorative-shape top-0 left-0 -translate-x-1/3 -translate-y-1/3">
+        <svg width="600" height="600" viewBox="0 0 600 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="300" cy="300" r="300" fill="url(#paint0_linear_1_2)"/>
+            <defs>
+                <linearGradient id="paint0_linear_1_2" x1="0" y1="0" x2="600" y2="600" gradientUnits="userSpaceOnUse">
+                    <stop stop-color="#14B8A6" stop-opacity="0.2"/>
+                    <stop offset="1" stop-color="#F0F2F5" stop-opacity="0"/>
+                </linearGradient>
+            </defs>
+        </svg>
+    </div>
+    <div class="decorative-shape bottom-0 right-0 translate-x-1/3 translate-y-1/3">
+        <svg width="500" height="500" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M500 250C500 388.071 388.071 500 250 500C111.929 500 0 388.071 0 250C0 111.929 111.929 0 250 0C388.071 0 500 111.929 500 250Z" fill="url(#paint1_radial_1_3)"/>
+            <defs>
+                <radialGradient id="paint1_radial_1_3" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(250 250) rotate(90) scale(250)">
+                    <stop stop-color="#6366F1" stop-opacity="0.15"/>
+                    <stop offset="1" stop-color="#F0F2F5" stop-opacity="0"/>
+                </radialGradient>
+            </defs>
+        </svg>
+    </div>
+
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8 relative"> <!-- Add relative positioning to keep content on top -->
+        <header class="mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-800">Dashboard</h1>
+            <p class="text-gray-500 mt-1">Welcome to your Inventory Management System.</p>
+        </header>
+
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Form Section -->
+            <div class="lg:col-span-1">
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h2 id="form-title" class="text-2xl font-semibold text-gray-700 mb-6">Add New Product</h2>
+                    <form id="product-form">
+                        <input type="hidden" id="product-id">
+                        <div class="space-y-4">
+                            <div>
+                                <label for="name" class="block text-sm font-medium text-gray-600">Product Name</label>
+                                <input type="text" id="name" name="name" required class="form-input mt-1 block w-full border-gray-300 rounded-lg shadow-sm transition" placeholder="e.g., Organic Milk">
+                            </div>
+                            <div>
+                                <label for="description" class="block text-sm font-medium text-gray-600">Description</label>
+                                <textarea id="description" name="description" rows="3" class="form-textarea mt-1 block w-full border-gray-300 rounded-lg shadow-sm transition" placeholder="e.g., 1 Litre, Full Cream"></textarea>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label for="quantity" class="block text-sm font-medium text-gray-600">Quantity</label>
+                                    <input type="number" id="quantity" name="quantity" required min="0" class="form-input mt-1 block w-full border-gray-300 rounded-lg shadow-sm transition" placeholder="12">
+                                </div>
+                                <div>
+                                    <label for="price" class="block text-sm font-medium text-gray-600">Price (₹)</label>
+                                    <input type="number" id="price" name="price" required min="0" step="0.01" class="form-input mt-1 block w-full border-gray-300 rounded-lg shadow-sm transition" placeholder="60.00">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-8 flex items-center space-x-3">
+                            <button type="submit" id="submit-button" class="btn w-full flex-grow bg-teal-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-teal-700 transition transform hover:scale-105">
+                                Save Product
+                            </button>
+                            <button type="button" id="cancel-edit" class="btn hidden bg-gray-200 text-gray-700 font-semibold py-3 px-4 rounded-lg hover:bg-gray-300 transition">
+                                Cancel
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Product List Section -->
+            <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-lg">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+                    <h2 class="text-2xl font-semibold text-gray-700 mb-2 sm:mb-0">Product List</h2>
+                    <div class="flex items-center space-x-4">
+                        <div class="text-right">
+                             <p class="text-gray-500 text-sm">Total Inventory Value</p>
+                             <p id="total-value" class="text-2xl font-bold text-teal-600">₹0.00</p>
+                        </div>
+                        <button id="download-pdf" class="p-2 bg-gray-100 rounded-lg text-gray-500 hover:bg-teal-100 hover:text-teal-600 transition" title="Download as PDF">
+                             <i data-feather="download" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                                <th scope="col" class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
+                            </tr>
+                        </thead>
+                        <tbody id="product-list" class="bg-white divide-y divide-gray-200">
+                            <!-- Loading indicator -->
+                            <tr id="loading-indicator">
+                                <td colspan="4" class="text-center p-8">
+                                    <div class="flex justify-center items-center">
+                                        <div class="spinner w-8 h-8 border-4 rounded-full"></div>
+                                        <p class="ml-4 text-gray-500">Loading products...</p>
+                                    </div>
+                                </td>
+                            </tr>
+                            <!-- Empty state -->
+                             <tr id="empty-state" class="hidden">
+                                <td colspan="4" class="text-center p-8">
+                                    <div class="flex flex-col items-center">
+                                        <i data-feather="archive" class="w-12 h-12 text-gray-400 mb-2"></i>
+                                        <p class="text-gray-500">No products found. Add one to get started!</p>
+                                    </div>
+                                </td>
+                            </tr>
+                            <!-- Product rows will be injected here by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-modal" class="fixed inset-0 bg-gray-900 bg-opacity-60 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm m-4">
+            <div class="text-center">
+                 <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                    <i data-feather="alert-triangle" class="h-6 w-6 text-red-600"></i>
+                </div>
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mt-3">Delete Product</h3>
+                <div class="mt-2">
+                    <p class="text-sm text-gray-500">
+                        Are you sure you want to delete this product? This action cannot be undone.
+                    </p>
+                </div>
+            </div>
+            <div class="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
+                <button id="confirmDeleteBtn" type="button" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 sm:col-start-2 sm:text-sm">
+                    Delete
+                </button>
+                <button id="cancelDeleteBtn" type="button" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:col-start-1 sm:text-sm">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- CONFIGURATION ---
+            // IMPORTANT: When you deploy, you MUST change this URL to your live backend server URL!
+            // Example: const apiUrl = 'https://inventory-backend.onrender.com/api/products';
+            const apiUrl = 'http://localhost:3000/api/products'; // Backend API URL
+
+            // --- DOM ELEMENTS ---
+            const productForm = document.getElementById('product-form');
+            const formTitle = document.getElementById('form-title');
+            const submitButton = document.getElementById('submit-button');
+            const cancelEditBtn = document.getElementById('cancel-edit');
+            const productList = document.getElementById('product-list');
+            const totalValueEl = document.getElementById('total-value');
+            const loadingIndicator = document.getElementById('loading-indicator');
+            const emptyState = document.getElementById('empty-state');
+            
+            // Modal elements
+            const deleteModal = document.getElementById('delete-modal');
+            const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+            const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+            const downloadPdfBtn = document.getElementById('download-pdf');
+
+            let currentProducts = []; // Store current products for PDF export
+            let productIdToDelete = null;
+
+            // --- FUNCTIONS ---
+
+            // Render all products to the table
+            const renderProducts = (products) => {
+                productList.innerHTML = ''; // Clear previous content
+                let totalValue = 0;
+                if (products.length === 0) {
+                    emptyState.classList.remove('hidden');
+                } else {
+                    emptyState.classList.add('hidden');
+                    products.forEach(product => {
+                        const productValue = product.quantity * product.price;
+                        totalValue += productValue;
+                        const row = document.createElement('tr');
+                        row.className = 'hover:bg-gray-50';
+                        row.innerHTML = `
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">${product.name}</div>
+                                <div class="text-sm text-gray-500">${product.description || ''}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${product.quantity}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">₹${parseFloat(product.price).toFixed(2)}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <button class="edit-btn p-1 text-teal-600 hover:text-teal-900" data-id="${product.id}" title="Edit">
+                                    <i data-feather="edit" class="w-4 h-4"></i>
+                                </button>
+                                <button class="delete-btn p-1 text-red-600 hover:text-red-900 ml-2" data-id="${product.id}" title="Delete">
+                                    <i data-feather="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </td>
+                        `;
+                        productList.appendChild(row);
+                    });
+                }
+                totalValueEl.textContent = `₹${totalValue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                feather.replace(); // Re-render icons
+            };
+            
+            // Fetch all products from the server
+            const fetchProducts = async () => {
+                loadingIndicator.classList.remove('hidden');
+                emptyState.classList.add('hidden');
+                productList.innerHTML = '';
+                try {
+                    const response = await fetch(apiUrl);
+                    if (!response.ok) throw new Error('Failed to fetch products');
+                    const products = await response.json();
+                    currentProducts = products; // Save products for PDF export
+                    renderProducts(products);
+                } catch (error) {
+                    console.error('Error:', error);
+                    productList.innerHTML = `<tr><td colspan="4" class="text-center text-red-500 p-4">Error loading products. Is the backend server running?</td></tr>`;
+                } finally {
+                    loadingIndicator.classList.add('hidden');
+                }
+            };
+
+            // Reset form to its initial state
+            const resetForm = () => {
+                productForm.reset();
+                document.getElementById('product-id').value = '';
+                formTitle.textContent = 'Add New Product';
+                submitButton.textContent = 'Save Product';
+                cancelEditBtn.classList.add('hidden');
+            };
+
+            // Populate form for editing a product
+            const populateFormForEdit = (product) => {
+                document.getElementById('product-id').value = product.id;
+                document.getElementById('name').value = product.name;
+                document.getElementById('description').value = product.description;
+                document.getElementById('quantity').value = product.quantity;
+                document.getElementById('price').value = product.price;
+
+                formTitle.textContent = 'Edit Product';
+                submitButton.textContent = 'Update Product';
+                cancelEditBtn.classList.remove('hidden');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                document.getElementById('name').focus();
+            };
+
+            // Show/Hide Delete Modal
+            const openDeleteModal = (id) => {
+                productIdToDelete = id;
+                deleteModal.classList.remove('hidden');
+                deleteModal.classList.add('flex');
+            };
+
+            const closeDeleteModal = () => {
+                deleteModal.classList.add('hidden');
+                deleteModal.classList.remove('flex');
+                productIdToDelete = null;
+            };
+            
+
+            // --- EVENT LISTENERS ---
+
+            // Handle form submission (Add or Update)
+            productForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const id = document.getElementById('product-id').value;
+                const productData = {
+                    name: document.getElementById('name').value,
+                    description: document.getElementById('description').value,
+                    quantity: parseInt(document.getElementById('quantity').value, 10),
+                    price: parseFloat(document.getElementById('price').value)
+                };
+
+                const method = id ? 'PUT' : 'POST';
+                const url = id ? `${apiUrl}/${id}` : apiUrl;
+
+                try {
+                    const response = await fetch(url, {
+                        method: method,
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(productData)
+                    });
+                    if (!response.ok) throw new Error('Failed to save product');
+                    
+                    fetchProducts();
+                    resetForm();
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Failed to save product. Check console for details.');
+                }
+            });
+
+            // Handle cancel edit button
+            cancelEditBtn.addEventListener('click', resetForm);
+
+            // Handle clicks on Edit and Delete buttons
+            productList.addEventListener('click', async (e) => {
+                const editButton = e.target.closest('.edit-btn');
+                const deleteButton = e.target.closest('.delete-btn');
+
+                if (editButton) {
+                    const id = editButton.dataset.id;
+                    try {
+                        const response = await fetch(`${apiUrl}/${id}`);
+                        if (!response.ok) throw new Error('Failed to fetch product details');
+                        const product = await response.json();
+                        populateFormForEdit(product);
+                    } catch (error) {
+                        console.error('Error:', error);
+                        alert('Could not fetch product details.');
+                    }
+                }
+
+                if (deleteButton) {
+                    const id = deleteButton.dataset.id;
+                    openDeleteModal(id);
+                }
+            });
+
+            // Handle modal button clicks
+            cancelDeleteBtn.addEventListener('click', closeDeleteModal);
+            confirmDeleteBtn.addEventListener('click', async () => {
+                if (!productIdToDelete) return;
+                try {
+                    const response = await fetch(`${apiUrl}/${productIdToDelete}`, {
+                        method: 'DELETE'
+                    });
+                    if (!response.ok) throw new Error('Failed to delete product');
+                    fetchProducts();
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Failed to delete product.');
+                } finally {
+                    closeDeleteModal();
+                }
+            });
+
+            // Handle PDF Download
+            const downloadPDF = () => {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                const tableColumn = ["ID", "Product Name", "Description", "Quantity", "Price", "Total Value"];
+                const tableRows = [];
+                let totalInventoryValue = 0;
+
+                currentProducts.forEach(product => {
+                    const productValue = product.quantity * product.price;
+                    totalInventoryValue += productValue;
+                    const productData = [
+                        product.id,
+                        product.name,
+                        product.description || "-",
+                        product.quantity,
+                        `₹${parseFloat(product.price).toFixed(2)}`,
+                        `₹${productValue.toFixed(2)}`
+                    ];
+                    tableRows.push(productData);
+                });
+
+                doc.autoTable(tableColumn, tableRows, { startY: 20 });
+                doc.text("Inventory Report", 14, 15);
+                
+                // Add summary footer
+                const finalY = doc.autoTable.previous.finalY;
+                doc.setFontSize(12);
+                doc.text(`Total Inventory Value: ₹${totalInventoryValue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 14, finalY + 10);
+
+                doc.save(`inventory_report_${new Date().toISOString().slice(0,10)}.pdf`);
+            };
+
+            downloadPdfBtn.addEventListener('click', downloadPDF);
+
+
+            // --- INITIALIZATION ---
+            fetchProducts();
+            feather.replace(); // Initial icon render
+        });
+    </script>
+</body>
+</html>
+
